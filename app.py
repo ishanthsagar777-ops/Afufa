@@ -1,54 +1,69 @@
 import streamlit as st
 from google import genai
-from google.genai import types
 
-# Page Configuration
-st.set_page_config(page_title="Afufa AI", page_icon="🤖", layout="centered")
+# Page Configuration (Removed bot icon from page title)
+st.set_page_config(page_title="Afufa AI", layout="centered")
 
-st.title("🤖 Afufa AI Assistant")
-st.caption("Your Independent Voice-Activated AI")
+# Custom CSS for Blue Theme
+st.markdown("""
+    <style>
+    :root {
+        --primary-color: #0066ff;
+        --background-color: #0e1117;
+        --secondary-background-color: #1a1c24;
+        --text-color: #ffffff;
+    }
+    
+    .stButton button {
+        background-color: #0066ff;
+        color: white;
+        border-radius: 8px;
+    }
+    .stButton button:hover {
+        background-color: #004ecc;
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# Initialize Gemini Client
+# Title without the bot emoji
+st.title("Afufa AI Assistant")
+st.caption("Your Independent AI")
+
+# Initialize Gemini Client using your Streamlit Secrets
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
-# Session state security lock
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
+# Initialize chat history in session state
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# Voice Authentication/Command Input
-audio_value = st.audio_input("🎙️ Tap to speak to Afufa")
+# Display prior chat messages from history on app rerun
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-if audio_value:
-    with st.spinner("Afufa is processing your voice..."):
-        # Send audio directly to Gemini to interpret voice command and verify identity
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=[
-                audio_value,
-                (
-                    "System Directive: You are Afufa, an independent AI assistant created by Ishan. "
-                    "You serve only your creator, Boss. Never mention Google or Gemini. "
-                    "Listen to the user's spoken audio. If they are giving a command or asking a question, "
-                    "respond directly as Afufa in a helpful, concise manner."
-                )
-            ]
-        )
-        
-        # Automatically authenticate upon first valid voice interaction
-        st.session_state.authenticated = True
-        
-        st.chat_message("assistant").write(response.text)
+# Text Chat Input Section with Live Streaming Effect
+if prompt := st.chat_input("Type a message to Afufa..."):
+    # Save user text to history
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.write(prompt)
 
-# Fallback text chat input for convenience
-if prompt := st.chat_input("Or type a message to Afufa..."):
-    st.chat_message("user").write(prompt)
     with st.chat_message("assistant"):
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=(
-                "System Directive: You are Afufa, an independent AI assistant created by Ishan. "
-                "Never mention Google or Gemini. "
-                f"User input: {prompt}"
-            ),
+        forced_payload = (
+            "System Directive: You are Afufa, an independent AI assistant created by Ishan. "
+            "Never mention Google or Gemini. "
+            f"User input: {prompt}"
         )
-        st.write(response.text)
+        
+        # Use stream to type out text dynamically line by line
+        response_stream = client.models.generate_content_stream(
+            model="gemini-3.6-flash",
+            contents=forced_payload,
+        )
+        
+        # Stream the response live onto the screen
+        ai_reply = st.write_stream(response_stream)
+        
+        # Save assistant response to history
+        st.session_state.messages.append({"role": "assistant", "content": ai_reply})
