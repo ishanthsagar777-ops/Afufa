@@ -11,7 +11,7 @@ st.caption("Ask me anything, record audio, or upload images!")
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # 1. Image Upload Section
-uploaded_file = st.file_uploader("📷 / 🖼️ Upload image or camera capture", type=["png", "jpg", "jpeg"])
+uploaded_file = st.file_uploader("📸 / 🖼️ Upload image or camera capture", type=["png", "jpg", "jpeg"])
 
 if uploaded_file is not None:
     st.image(uploaded_file, caption="Uploaded Image", use_container_width=True)
@@ -26,7 +26,7 @@ if audio_value:
 # 3. Chat Interface & Live AI Responses
 if prompt := st.chat_input("Ask Afufa anything..."):
     st.chat_message("user").write(prompt)
-    
+
     with st.chat_message("assistant"):
         response = client.models.generate_content(
             model="gemini-2.0-flash",
