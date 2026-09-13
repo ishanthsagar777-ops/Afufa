@@ -1,32 +1,46 @@
 import streamlit as st
 from google import genai
 
-# Page Configuration (Removed bot icon from page title)
+# Page Configuration (Clean title, no emoji)
 st.set_page_config(page_title="Afufa AI", layout="centered")
 
-# Custom CSS for Blue Theme
+# Custom CSS for Green Theme and Rounded Search Bar
 st.markdown("""
     <style>
     :root {
-        --primary-color: #0066ff;
+        --primary-color: #2e7d32;
         --background-color: #0e1117;
         --secondary-background-color: #1a1c24;
         --text-color: #ffffff;
     }
     
+    /* Remove default red focus glow and add smooth green curves to the chat input */
+    [data-testid="stChatInput"] textarea {
+        border-radius: 24px !important;
+        border: 1px solid #2e7d32 !important;
+        background-color: #1a1c24 !important;
+        color: #ffffff !important;
+    }
+    
+    /* Ensure no red border/glow appears when clicked or focused */
+    [data-testid="stChatInput"] textarea:focus {
+        border: 2px solid #2e7d32 !important;
+        box-shadow: 0 0 8px rgba(46, 125, 50, 0.4) !important;
+    }
+    
+    /* Style buttons with a nice green accent */
     .stButton button {
-        background-color: #0066ff;
+        background-color: #2e7d32;
         color: white;
         border-radius: 8px;
     }
     .stButton button:hover {
-        background-color: #004ecc;
+        background-color: #1b5e20;
         color: white;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Title without the bot emoji
 st.title("Afufa AI Assistant")
 st.caption("Your Independent AI")
 
@@ -56,13 +70,12 @@ if prompt := st.chat_input("Type a message to Afufa..."):
             f"User input: {prompt}"
         )
         
-        # Use stream to type out text dynamically line by line
+        # Stream the actual response chunks cleanly onto the screen
         response_stream = client.models.generate_content_stream(
             model="gemini-3.6-flash",
             contents=forced_payload,
         )
         
-        # Stream the response live onto the screen
         ai_reply = st.write_stream(response_stream)
         
         # Save assistant response to history
