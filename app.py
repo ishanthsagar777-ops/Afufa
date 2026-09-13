@@ -1,168 +1,35 @@
 import streamlit as st
 from google import genai
-import os
 
-# -----------------------------
-# PAGE SETTINGS
-# -----------------------------
+# Page Configuration
+st.set_page_config(page_title="Afufa AI", page_icon="🤖", layout="centered")
 
-st.set_page_config(
-    page_title="Afufa AI",
-    page_icon="🤖",
-    layout="centered"
-)
+st.title("🤖 Afufa AI Assistant")
+st.caption("Ask me anything, record audio, or upload images!")
 
-st.title("🤖 Afufa AI")
-st.caption("Your personal AI assistant")
+# Initialize Gemini Client using Streamlit Secrets
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
-# -----------------------------
-# GET API KEY
-# -----------------------------
+# 1. Image Upload Section
+uploaded_file = st.file_uploader("📸 / 🖼️ Upload image or camera capture", type=["png", "jpg", "jpeg"])
 
-api_key = os.getenv("GEMINI_API_KEY")
+if uploaded_file is not None:
+    st.image(uploaded_file, caption="Uploaded Image", use_container_width=True)
 
-# Streamlit Secrets fallback
-if not api_key:
-    try:
-        api_key = st.secrets["GEMINI_API_KEY"]
-    except Exception:
-        api_key = None
+# 2. Voice Input Section
+audio_value = st.audio_input("🎙️ Tap to speak")
 
-if not api_key:
-    st.error("❌ GEMINI_API_KEY is not configured.")
-    st.info(
-        "Add GEMINI_API_KEY to your Streamlit Secrets or environment variables."
-    )
-    st.stop()
+if audio_value:
+    st.audio(audio_value)
+    st.info("Audio recorded successfully!")
 
-# -----------------------------
-# GEMINI CLIENT
-# -----------------------------
-
-try:
-    client = genai.Client(api_key=api_key)
-except Exception as e:
-    st.error("❌ Could not connect to Gemini.")
-    st.code(str(e))
-    st.stop()
-
-# -----------------------------
-# CHAT MEMORY
-# -----------------------------
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# -----------------------------
-# DISPLAY OLD MESSAGES
-# -----------------------------
-
-for message in st.session_state.messages:
-
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# -----------------------------
-# USER INPUT
-# -----------------------------
-
-prompt = st.chat_input("Ask Afufa anything...")
-
-if prompt:
-
-    # Show user message
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": prompt
-        }
-    )
-
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    # Build conversation for Gemini
-    conversation = ""
-
-    for message in st.session_state.messages:
-        if message["role"] == "user":
-            conversation += f"User: {message['content']}\n"
-        else:
-            conversation += f"Afufa AI: {message['content']}\n"
-
-    # -----------------------------
-    # GEMINI REQUEST
-    # -----------------------------
+# 3. Chat Interface & Live AI Responses
+if prompt := st.chat_input("Ask Afufa anything..."):
+    st.chat_message("user").write(prompt)
 
     with st.chat_message("assistant"):
-
-        with st.spinner("Thinking..."):
-
-            try:
-
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=conversation
-                )
-
-                answer = response.text
-
-                if not answer:
-                    answer = "Sorry, I couldn't generate a response."
-
-                st.markdown(answer)
-
-                # Save AI response
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": answer
-                    }
-                )
-
-            except Exception as e:
-
-                st.error("❌ Gemini API Error")
-                st.code(str(e))
-
-# -----------------------------
-# SIDEBAR
-# -----------------------------
-
-with st.sidebar:
-
-    st.header("⚙️ Afufa AI")
-
-    st.write(
-        "Powered by Google Gemini"
-    )
-
-    st.divider()
-
-    if st.button("🗑️ Clear Chat"):
-
-        st.session_state.messages = []
-
-        st.rerun()
-
-    st.divider()
-
-    st.caption(
-        "Afufa AI • Streamlit"
-    )
-requirements.txt
-Make sure your requirements.txt contains:
-streamlit
-google-genai
-You can also pin a recent version if you want reproducible deployments:
-streamlit>=1.40.0
-google-genai>=1.0.0
-Google's current examples use:
-from google import genai
-
-client = genai.Client()
-
-response = client.models.generate_content(
-    model="gemini-2.5-flash",
-    contents="Hello"
-)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        st.write(response.text)
