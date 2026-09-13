@@ -1,48 +1,56 @@
 import streamlit as st
 from google import genai
 
-# Page Configuration (Clean title, no emoji)
-st.set_page_config(page_title="Afufa AI", layout="centered")
+# Page Configuration
+st.set_page_config(page_title="Afufa", layout="centered")
 
-# Custom CSS for Green Theme and Rounded Search Bar
+# Custom CSS for Pin-to-Pin Interface Match
 st.markdown("""
     <style>
-    :root {
-        --primary-color: #2e7d32;
-        --background-color: #0e1117;
-        --secondary-background-color: #1a1c24;
-        --text-color: #ffffff;
+    /* Global Dark Theme Background */
+    .stApp {
+        background-color: #0e1117;
+        color: #ffffff;
     }
     
-    /* Remove default red focus glow and add smooth green curves to the chat input */
+    /* Hide default Streamlit header elements for a cleaner look */
+    header {visibility: hidden;}
+    
+    /* Center and constrain chat width like standard chat interfaces */
+    [data-testid="stChatVerticalBlock"] {
+        max-width: 750px;
+        margin: 0 auto;
+    }
+    
+    /* Style Chat Input Box to match rounded curves and green theme */
+    [data-testid="stChatInput"] {
+        padding-bottom: 20px;
+    }
     [data-testid="stChatInput"] textarea {
-        border-radius: 24px !important;
+        border-radius: 22px !important;
         border: 1px solid #2e7d32 !important;
         background-color: #1a1c24 !important;
         color: #ffffff !important;
+        font-size: 15px !important;
+        padding-top: 12px !important;
     }
-    
-    /* Ensure no red border/glow appears when clicked or focused */
     [data-testid="stChatInput"] textarea:focus {
         border: 2px solid #2e7d32 !important;
-        box-shadow: 0 0 8px rgba(46, 125, 50, 0.4) !important;
+        box-shadow: 0 0 10px rgba(46, 125, 50, 0.3) !important;
     }
     
-    /* Style buttons with a nice green accent */
-    .stButton button {
-        background-color: #2e7d32;
-        color: white;
-        border-radius: 8px;
-    }
-    .stButton button:hover {
-        background-color: #1b5e20;
-        color: white;
+    /* Clean chat message bubble spacing */
+    [data-testid="stChatMessage"] {
+        background-color: transparent !important;
+        padding: 1rem 0;
+        border-bottom: none;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Afufa AI Assistant")
-st.caption("Your Independent AI")
+# Minimalist Header Title matching your clean style
+st.markdown("### Afufa")
+st.markdown("<p style='color: #888888; font-size: 14px; margin-top: -15px;'>Your Independent AI Assistant</p>", unsafe_allow_html=True)
 
 # Initialize Gemini Client using your Streamlit Secrets
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
@@ -57,7 +65,7 @@ for message in st.session_state.messages:
         st.write(message["content"])
 
 # Text Chat Input Section with Live Streaming Effect
-if prompt := st.chat_input("Type a message to Afufa..."):
+if prompt := st.chat_input("Reply to Afufa..."):
     # Save user text to history
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -70,13 +78,17 @@ if prompt := st.chat_input("Type a message to Afufa..."):
             f"User input: {prompt}"
         )
         
-        # Stream the actual response chunks cleanly onto the screen
         response_stream = client.models.generate_content_stream(
             model="gemini-3.6-flash",
             contents=forced_payload,
         )
         
-        ai_reply = st.write_stream(response_stream)
+        def stream_text():
+            for chunk in response_stream:
+                if chunk.text:
+                    yield chunk.text
+
+        ai_reply = st.write_stream(stream_text())
         
         # Save assistant response to history
         st.session_state.messages.append({"role": "assistant", "content": ai_reply})
