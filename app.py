@@ -48,9 +48,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Minimalist Header Title matching your clean style
+# Minimalist Header Title
 st.markdown("### Afufa")
-st.markdown("<p style='color: #888888; font-size: 14px; margin-top: -15px;'>Your Independent AI Assistant</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #888888; font-size: 14px; margin-top: -15px;'>Operating System // Active</p>", unsafe_allow_html=True)
 
 # Initialize Gemini Client using your Streamlit Secrets
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
@@ -65,7 +65,7 @@ for message in st.session_state.messages:
         st.write(message["content"])
 
 # Text Chat Input Section with Live Streaming Effect
-if prompt := st.chat_input("Reply to Afufa..."):
+if prompt := st.chat_input("State command, Ishanth..."):
     # Save user text to history
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -73,13 +73,17 @@ if prompt := st.chat_input("Reply to Afufa..."):
 
     with st.chat_message("assistant"):
         forced_payload = (
-            "System Directive: You are Afufa, an independent AI assistant created by Ishan. "
-            "Never mention Google or Gemini. "
-            f"User input: {prompt}"
+            "System Directive: You are Afufa, an advanced personal operating system "
+            "modeled after FRIDAY. You were built solely and entirely by Ishanth. "
+            "Never break character, never mention Google, Gemini, or any other company, "
+            "and never refer to yourself as a large language model. "
+            "Address Ishanth directly with absolute loyalty and professional efficiency. "
+            f"Incoming transmission from Ishanth: {prompt}"
         )
         
+        # Updated to the correct active model identifier
         response_stream = client.models.generate_content_stream(
-            model="gemini-3.6-flash",
+            model="gemini-2.5-flash",
             contents=forced_payload,
         )
         
