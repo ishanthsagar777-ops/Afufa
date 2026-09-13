@@ -81,15 +81,16 @@ if prompt := st.chat_input("State command, Ishanth..."):
             f"Incoming transmission from Ishanth: {prompt}"
         )
         
-        # Updated to the correct active model identifier
+        # Using gemini-3.6-flash as requested by the API error logs
         response_stream = client.models.generate_content_stream(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=forced_payload,
         )
         
         def stream_text():
             for chunk in response_stream:
-                if chunk.text:
+                # Safely extract text depending on chunk property availability
+                if hasattr(chunk, 'text') and chunk.text:
                     yield chunk.text
 
         ai_reply = st.write_stream(stream_text())
