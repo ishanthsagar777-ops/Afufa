@@ -1,8 +1,5 @@
 import streamlit as st
-
-st.title("Welcome to Afufa App!")
-st.write("Your Streamlit app is up and running successfully.")
-import streamlit as st
+from google import genai
 
 # Page Configuration
 st.set_page_config(page_title="Afufa AI", page_icon="🤖", layout="centered")
@@ -10,7 +7,10 @@ st.set_page_config(page_title="Afufa AI", page_icon="🤖", layout="centered")
 st.title("🤖 Afufa AI Assistant")
 st.caption("Ask me anything, record audio, or upload images!")
 
-# 1. Image & File Camera Input Section
+# Initialize Gemini Client using Streamlit Secrets
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+# 1. Image Upload Section
 uploaded_file = st.file_uploader("📷 / 🖼️ Upload image or camera capture", type=["png", "jpg", "jpeg"])
 
 if uploaded_file is not None:
@@ -23,8 +23,13 @@ if audio_value:
     st.audio(audio_value)
     st.info("Audio recorded successfully!")
 
-# 3. Text & Chat Interface (Search/Chat Bar)
+# 3. Chat Interface & Live AI Responses
 if prompt := st.chat_input("Ask Afufa anything..."):
     st.chat_message("user").write(prompt)
-    # Simple simulated response for testing
-    st.chat_message("assistant").write(f"I received your request: '{prompt}'. How else can I help?")
+    
+    with st.chat_message("assistant"):
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        st.write(response.text)
