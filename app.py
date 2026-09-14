@@ -126,11 +126,11 @@ if user_display_text and payload_contents:
         st.write(user_display_text)
 
     with st.chat_message("assistant", avatar="⚡"):
-        # Generator function with try-except to trap quota limits safely
+        # Generator function with robust error handlers for rate limits or server spikes
         def stream_text():
             try:
                 response_stream = client.models.generate_content_stream(
-                    model="gemini-3.6-flash",
+                    model="gemini-2.5-flash",
                     contents=payload_contents,
                 )
                 for chunk in response_stream:
@@ -140,6 +140,8 @@ if user_display_text and payload_contents:
                 error_str = str(stream_err)
                 if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
                     yield "\n\n[System Notice: API quota limit reached. Stand by for cooldown.]"
+                elif "503" in error_str or "UNAVAILABLE" in error_str:
+                    yield "\n\n[System Notice: Server traffic spike detected. Re-initiating transmission...]"
                 else:
                     yield f"\n\n[System Error Encountered: {error_str}]"
 
