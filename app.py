@@ -52,8 +52,9 @@ st.markdown("""
 st.markdown("### Afufa")
 st.markdown("<p style='color: #888888; font-size: 14px; margin-top: -15px;'>Operating System // Active</p>", unsafe_allow_html=True)
 
-# Initialize Gemini Client using your Streamlit Secrets
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+# Safe API Key Lookup (checks both custom names so it never crashes)
+api_key = st.secrets.get("AFUFA_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
 
 # Initialize chat history in session state
 if "messages" not in st.session_state:
@@ -81,17 +82,22 @@ if prompt := st.chat_input("State command, Ishanth..."):
             f"Incoming transmission from Ishanth: {prompt}"
         )
         
-        # Using gemini-3.6-flash as requested by the API error logs
-        response_stream = client.models.generate_content_stream(
-            model="gemini-3.6-flash",
-            contents=forced_payload,
-        )
-        
+        # Generator function with try-except to trap quota limits safely
         def stream_text():
-            for chunk in response_stream:
-                # Safely extract text depending on chunk property availability
-                if hasattr(chunk, 'text') and chunk.text:
-                    yield chunk.text
+            try:
+                response_stream = client.models.generate_content_stream(
+                    model="gemini-3.6-flash",
+                    contents=forced_payload,
+                )
+                for chunk in response_stream:
+                    if hasattr(chunk, 'text') and chunk.text:
+                        yield chunk.text
+            except Exception as stream_err:
+                error_str = str(stream_err)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    yield "\n\n[System Notice: API quota limit reached. Stand by for cooldown.]"
+                else:
+                    yield f"\n\n[System Error Encountered: {error_str}]"
 
         ai_reply = st.write_stream(stream_text())
         
